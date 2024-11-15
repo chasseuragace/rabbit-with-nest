@@ -1,10 +1,11 @@
 version: '3.8'
+
 services:
-  app:
+  producer:
     build:
-      context: .
+      context: ./producer
       dockerfile: Dockerfile
-    container_name: notification-scheduler
+    container_name: producer-service
     environment:
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
@@ -18,10 +19,31 @@ services:
       - postgres
       - rabbitmq
     volumes:
-      - .:/usr/src/app:delegated             # Mount the entire project folder
-      - /usr/src/app/node_modules             # Persist node_modules
-      - /usr/src/app/dist                     # Optional: Persist dist directory
-    command: npm run start:dev                # Run in development mode with hot-reload
+      - ./producer:/usr/src/app:delegated        # Mount the producer folder
+      - /usr/src/app/node_modules                # Persist node_modules
+      - /usr/src/app/dist                        # Optional: Persist dist directory
+    command: npm run start:dev                   # Run in development mode with hot-reload
+
+  consumer:
+    build:
+      context: ./consumer
+      dockerfile: Dockerfile
+    container_name: consumer-service
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: notification_db
+      RABBITMQ_URL: amqp://rabbitmq:5672
+    depends_on:
+      - postgres
+      - rabbitmq
+    volumes:
+      - ./consumer:/usr/src/app:delegated        # Mount the consumer folder
+      - /usr/src/app/node_modules                # Persist node_modules
+      - /usr/src/app/dist                        # Optional: Persist dist directory
+    command: npm run start:dev                   # Run in development mode with hot-reload
 
   postgres:
     image: postgres:13
